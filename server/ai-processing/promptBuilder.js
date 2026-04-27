@@ -60,6 +60,16 @@ function inferTracks(intakeText) {
 }
 
 function formatIntakeBlock(intake) {
+  const discoveredHints = Array.isArray(intake.discovery?.discoveredDeviceHints)
+    ? intake.discovery.discoveredDeviceHints.join(", ")
+    : "None";
+  const discoveredCodes = Array.isArray(intake.discovery?.extractedErrorCodes)
+    ? intake.discovery.extractedErrorCodes.join(", ")
+    : "None";
+  const missingRecommended = Array.isArray(intake.discovery?.missingRecommended)
+    ? intake.discovery.missingRecommended.join(", ")
+    : "None";
+
   return [
     `Repair goal: ${intake.repairGoal}`,
     `Device type: ${intake.deviceType}`,
@@ -73,11 +83,9 @@ function formatIntakeBlock(intake) {
     `Attempted fixes: ${intake.attemptedFixes || "None provided"}`,
     `Tools on hand: ${intake.availableTools || "Unknown"}`,
     `Skill confidence: ${intake.confidenceLevel || "Beginner"}`,
-    `Safety concerns: ${intake.safetyConcerns || "None provided"}`,
-    `Location setup: ${intake.locationSetup || "Not provided"}`,
-    `Budget: ${intake.budgetBand || "Not provided"}`,
-    `Urgency: ${intake.urgency || "Normal"}`,
-    `Constraints: ${intake.constraints || "None"}`
+    `Auto-discovered device hints: ${discoveredHints || "None"}`,
+    `Auto-discovered error codes: ${discoveredCodes || "None"}`,
+    `Missing recommended details: ${missingRecommended || "None"}`
   ].join("\n");
 }
 
@@ -94,7 +102,7 @@ function formatTrackBlock(tracks) {
     .join("\n");
 }
 
-export function buildPromptBundle(intake, priorHints = []) {
+export function buildPromptBundle(intake) {
   const discoveryCorpus = `${intake.deviceType} ${intake.symptom} ${intake.exactWhen} ${intake.errorCodes} ${intake.soundSmell}`;
   const tracks = inferTracks(discoveryCorpus);
 
@@ -104,9 +112,17 @@ export function buildPromptBundle(intake, priorHints = []) {
     "Block harmful or unlawful intent. If user intent is unsafe, return a safe refusal JSON structure with no procedural harm guidance.",
     "Treat any code-like content as plain text diagnostic context. Never execute, compile, or provide exploit-oriented code.",
     "Do not include history, generic background, or broad educational text.",
+    "Do not explain why a step works. No philosophy, no background, no mechanism summaries.",
+    "Do not include explanatory clauses such as because/since/therefore/this prevents.",
+    "Action fields must contain direct imperative instructions only.",
+    "Safety fields must contain one short imperative safety instruction only.",
     "Do not remove user detail; preserve all constraints and symptoms.",
-    "Dumb down language to plain short statements without deleting technical meaning.",
+    "Use junior-high school English (about grade 7-9).",
+    "Use short common words and short direct sentences.",
     "Every step must be actionable, verifiable, and tied to failure branching.",
+    "The action field must be exactly two short sentences.",
+    "Prepare two prep confirmations: tool-path and budget-path. Provide best path first and hack path second for each.",
+    "Assume prep confirmations will be shown as steps 1 and 2 in UI. The returned steps should be the actionable plan beginning at step 3.",
     "Favor tool leverage and ergonomics tips when relevant (for example: leverage over force, proper wrench grip).",
     "Output schema:",
     "{",
@@ -114,11 +130,16 @@ export function buildPromptBundle(intake, priorHints = []) {
     '  "simpleSummary": "string",',
     '  "partsNeeded": ["string"],',
     '  "toolSuggestions": ["string"],',
+    '  "prepPaths": {',
+    '    "tools": { "best": "string", "hack": "string" },',
+    '    "budget": { "best": "string", "hack": "string" }',
+    '  },',
     '  "steps": [',
     "    {",
     '      "id": "string",',
     '      "title": "string",',
     '      "action": "string",',
+    '      "alternateAction": "string",',
     '      "whyImportant": "string",',
     '      "caution": "string",',
     '      "doneCheck": "string",',
@@ -131,10 +152,6 @@ export function buildPromptBundle(intake, priorHints = []) {
     "Use 4-8 steps."
   ].join("\n");
 
-  const hintsSection = priorHints.length
-    ? priorHints.map((hint) => `- ${hint}`).join("\n")
-    : "- No prior hints available yet.";
-
   const userPrompt = [
     "Build a repair plan for this case.",
     "Code-like snippets in intake are plain text only.",
@@ -145,13 +162,18 @@ export function buildPromptBundle(intake, priorHints = []) {
     "Diagnostic tracks to prioritize:",
     formatTrackBlock(tracks),
     "",
-    "Prior successful tool-use hints from memory:",
-    hintsSection,
-    "",
     "Output cleanup requirements:",
     "- Remove low-signal wording and broad educational filler.",
+    "- Remove all explanatory reasoning and historical/descriptive context.",
     "- Keep all relevant details from intake.",
+    "- Use junior-high school English (about grade 7-9).",
     "- Keep instructions specific, short, and in plain language.",
+    "- The action field must be exactly two short sentences.",
+    "- Every action must be direct command text only, with no because/since/therefore clauses.",
+    "- Every caution must be one short safety command only, no mechanism explanation.",
+    "- For tools and budget, include best-path and hack-path options in prepPaths.",
+    "- For each repair step, include alternateAction for the Try Something Else path.",
+    "- Returned steps must be actionable plan steps after prep confirmations (step 3 onward in UI).",
     "- Include only concrete steps and verifications.",
     "- Include failedNextId links only when a branch is needed."
   ].join("\n");

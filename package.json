@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
+    "launch": "node scripts/launch.js",
     "dev:client": "vite",
     "dev:server": "node server/server.js",
     "test": "node --test server/tests/**/*.test.mjs",

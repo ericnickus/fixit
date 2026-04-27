@@ -7,26 +7,24 @@ const __dirname = path.dirname(__filename);
 const rootConfigPath = path.resolve(__dirname, "../../fixity.config.json");
 
 const DEFAULT_CONFIG = {
-  mode: "selfTest",
-  modeOptions: ["selfTest", "UserMode"],
+  mode: "UserMode",
+  modeOptions: ["UserMode", "SubagentMode"],
   runModeSettings: {
     promptCooldownSeconds: 20,
     safetyBlockingEnabled: true,
-    normalizeCodeToText: true
+    normalizeCodeToText: true,
+    keepUserHistory: false,
+    historyLogFile: "data/requestHistory.jsonl"
   },
-  selfTest: {
+  SubagentMode: {
     plannerPath: "agent-run-subagent",
     lowCostModel: "gpt-4.1-mini",
-    strictSubagent: true,
-    allowMockFallback: false,
     enableSearchVerifier: true,
     searchSource: "duckduckgo-html"
   },
   UserMode: {
-    plannerPath: "agent-run-subagent",
+    plannerPath: "runtime-user",
     lowCostModel: "gpt-5-mini",
-    strictSubagent: true,
-    allowMockFallback: false,
     enableSearchVerifier: true,
     searchSource: "duckduckgo-html"
   }
@@ -65,14 +63,14 @@ export function resolveActiveModeConfig(config) {
     ? config.modeOptions
     : DEFAULT_CONFIG.modeOptions;
 
-  const requestedMode = String(config.mode || "selfTest");
-  const mode = modeOptions.includes(requestedMode) ? requestedMode : "selfTest";
-  const modeConfig = mode === "UserMode" ? config.UserMode : config.selfTest;
+  const requestedMode = String(config.mode || "UserMode");
+  const mode = modeOptions.includes(requestedMode) ? requestedMode : "UserMode";
+  const modeConfig = mode === "SubagentMode" ? config.SubagentMode : config.UserMode;
 
   return {
     mode,
     modeOptions,
-    modeConfig: deepMerge(DEFAULT_CONFIG.selfTest, modeConfig || {})
+    modeConfig: deepMerge(DEFAULT_CONFIG.SubagentMode, modeConfig || {})
   };
 }
 

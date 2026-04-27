@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { createRequestThrottle } from "../modules/requestThrottle.js";
-import { checkPromptSafety, normalizeIntakeToPlainText } from "../modules/promptSafety.js";
+import { checkPromptSafety, normalizeIntakeToPlainText } from "../ai-processing/promptSafety.js";
 import { resolveActiveModeConfig } from "../modules/runtimeConfig.js";
 
 test("resolveActiveModeConfig selects UserMode when configured", () => {
   const resolved = resolveActiveModeConfig({
     mode: "UserMode",
-    modeOptions: ["selfTest", "UserMode"],
-    selfTest: { lowCostModel: "gpt-4.1-mini" },
+    modeOptions: ["UserMode", "SubagentMode"],
+    SubagentMode: { lowCostModel: "gpt-4.1-mini" },
     UserMode: { lowCostModel: "gpt-5-mini", plannerPath: "agent-run-subagent" }
   });
 

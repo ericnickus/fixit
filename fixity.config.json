@@ -1,24 +1,24 @@
 {
   "mode": "UserMode",
-  "modeOptions": ["selfTest", "UserMode"],
+  "modeOptions": ["UserMode", "SubagentMode"],
   "runModeSettings": {
     "promptCooldownSeconds": 20,
     "safetyBlockingEnabled": true,
-    "normalizeCodeToText": true
+    "normalizeCodeToText": true,
+    "keepUserHistory": true,
+    "historyLogFile": "data/requestHistory.jsonl",
+    "plannerTimeoutMs": 30000,
+    "searchVerifierTimeoutMs": 8000
   },
-  "selfTest": {
+  "SubagentMode": {
     "plannerPath": "agent-run-subagent",
     "lowCostModel": "gpt-4.1-mini",
-    "strictSubagent": true,
-    "allowMockFallback": false,
     "enableSearchVerifier": true,
     "searchSource": "duckduckgo-html"
   },
   "UserMode": {
-    "plannerPath": "agent-run-subagent",
+    "plannerPath": "runtime-user",
     "lowCostModel": "gpt-5-mini",
-    "strictSubagent": true,
-    "allowMockFallback": false,
     "enableSearchVerifier": true,
     "searchSource": "duckduckgo-html"
   }
