@@ -5,6 +5,8 @@ import OpenAI from "openai";
 import { z } from "zod";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import path from "path";
+import { fileURLToPath } from "url";
 import pkg from "pg";
 const { Pool } = pkg;
 
@@ -19,6 +21,11 @@ import { processRepairPlanRequest } from "./ai-processing/repairPlanProcessor.js
 dotenv.config();
 
 const app = express();
+
+// Set up __dirname equivalent for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const port = Number(process.env.PORT || 8787);
 const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 const runtimeConfig = loadRuntimeConfig();
@@ -74,7 +81,7 @@ function buildApiKeyCandidateList(config) {
   return [...new Set([
     ...(configuredName ? [configuredName] : []),
     ...API_KEY_CANDIDATES,
-    ...discoveredNames
+    ...Object.keys(process.env).filter((name) => /(OPEN.?AI|CHAT.?GPT|GPT|NAI)/i.test(name) && /(KEY|TOKEN)/i.test(name))
   ])];
 }
 
@@ -110,6 +117,9 @@ await Promise.all([memoryStore.load(), metricsStore.load(), conformStatsStore.lo
 
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
+
+// Serve static files from the parent directory (/var/www/fixit/ relative to /server/)
+app.use(express.static(path.join(__dirname, '../')));
 
 // Zod Schema
 const StepEventSchema = z.object({
@@ -241,7 +251,7 @@ app.post("/api/payment/charge", async (request, response) => {
   }
 });
 
-// --- Existing API Routes ---
+// --- API Routes ---
 
 app.get("/api/health", (_request, response) => {
   response.json({
@@ -261,6 +271,34 @@ app.get("/api/health", (_request, response) => {
   });
 });
 
+app.post("/api/repair-plan", async (request, response) => {
+  const result = await processRepairPlanRequest({
+    body: request.body,
+    requestIp: request.ip,
+    openaiClient: openai,
+    runModeSettings,
+    modeConfig,
+    lowCostModel,
+    plannerPath,
+    mode,
+    promptThrottle,
+    memoryStore,
+    metricsStore,
+    conformStatsStore,
+    requestHistoryLogger,
+    apiKeyCandidateList
+  });
+
+  if (result.headers) {
+    for (const [header, value] of Object.entries(result.headers)) {
+      response.set(header, value);
+    }
+  }
+
+  return response.status(result.status).json(result.body);
+});
+
+// Support for older or alternative payload routes
 app.post("/api/repair-plan", async (request, response) => {
   const result = await processRepairPlanRequest({
     body: request.body,
@@ -314,6 +352,23 @@ app.get("/api/metrics", (_request, response) => {
   });
 });
 
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: 'Welcome to the Fixityerself API!',
+    timestamp: new Date()
+  });
+});
+
+// Fallback to serve your index.html file for non-API, front-end routes
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    return next();
+  }
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+// Start Server
 app.listen(port, () => {
   console.log(`Fixityerself backend listening on port ${port}`);
 });
