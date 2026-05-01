@@ -546,7 +546,6 @@ function App() {
 
     const snapshot = { ...INITIAL_INTAKE, ...intake };
     setPresets((current) => {
-      // Presets are write-once: once a slot is set, it can only be recalled.
       if (current[index]) {
         return current;
       }
@@ -822,7 +821,6 @@ function App() {
                   </div>
                 )}
               </div>
-
             </div>
           </section>
         )}
