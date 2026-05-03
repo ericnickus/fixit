@@ -119,7 +119,7 @@ app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
 // Serve static files from the parent directory (/var/www/fixit/ relative to /server/)
-app.use(express.static(path.join(__dirname, '../')));
+app.use(express.static(path.join(__dirname, '../dist')));
 
 // Zod Schema
 const StepEventSchema = z.object({
