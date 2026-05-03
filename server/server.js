@@ -75,7 +75,7 @@ function buildApiKeyCandidateList(config) {
 
   const discoveredNames = Object.keys(process.env).filter((name) => {
     const hasProviderHint = /(OPEN.?AI|CHAT.?GPT|GPT|NAI)/i.test(name) && /(KEY|TOKEN)/i.test(name);
-    return hasHint;
+    return hasProviderHint;
   });
 
   return [...new Set([
