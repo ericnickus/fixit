@@ -298,33 +298,6 @@ app.post("/api/repair-plan", async (request, response) => {
   return response.status(result.status).json(result.body);
 });
 
-// Support for older or alternative payload routes
-app.post("/api/repair-plan", async (request, response) => {
-  const result = await processRepairPlanRequest({
-    body: request.body,
-    requestIp: request.ip,
-    openaiClient: openai,
-    runModeSettings,
-    modeConfig,
-    lowCostModel,
-    plannerPath,
-    mode,
-    promptThrottle,
-    memoryStore,
-    metricsStore,
-    conformStatsStore,
-    requestHistoryLogger,
-    apiKeyCandidateList
-  });
-
-  if (result.headers) {
-    for (const [header, value] of Object.entries(result.headers)) {
-      response.set(header, value);
-    }
-  }
-
-  return response.status(result.status).json(result.body);
-});
 
 app.post("/api/step-event", async (request, response) => {
   const parsed = StepEventSchema.safeParse(request.body);
