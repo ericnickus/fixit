@@ -56,7 +56,7 @@ const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
   database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
+  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : "",
   port: Number(process.env.DB_PORT || 5432),
 });
 
@@ -72,11 +72,6 @@ function buildApiKeyCandidateList(config) {
   const configuredName = typeof config?.runModeSettings?.apiKeyEnvVar === "string"
     ? config.runModeSettings.apiKeyEnvVar.trim()
     : "";
-
-  const discoveredNames = Object.keys(process.env).filter((name) => {
-    const hasProviderHint = /(OPEN.?AI|CHAT.?GPT|GPT|NAI)/i.test(name) && /(KEY|TOKEN)/i.test(name);
-    return hasProviderHint;
-  });
 
   return [...new Set([
     ...(configuredName ? [configuredName] : []),
@@ -118,7 +113,7 @@ await Promise.all([memoryStore.load(), metricsStore.load(), conformStatsStore.lo
 app.use(cors());
 app.use(express.json({ limit: "2mb" }));
 
-// Serve static files from the parent directory (/var/www/fixit/ relative to /server/)
+// Serve static files from the build directory (/var/www/fixit/dist)
 app.use(express.static(path.join(__dirname, '../dist')));
 
 // Zod Schema
@@ -338,7 +333,7 @@ app.get('*', (req, res, next) => {
   if (req.path.startsWith('/api')) {
     return next();
   }
-  res.sendFile(path.join(__dirname, '../index.html'));
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
 });
 
 // Start Server
