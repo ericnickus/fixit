@@ -1,10 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 export default function Payment({ onPaymentSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handlePay = async () => {
     setLoading(true);
@@ -12,19 +10,22 @@ export default function Payment({ onPaymentSuccess }) {
 
     try {
       const token = localStorage.getItem("token");
+
       const response = await fetch("/api/payment/charge", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Trigger Root state change in main.jsx to mount App.jsx
-        onPaymentSuccess();
+        // 🔥 ONLY notify Root
+        if (onPaymentSuccess) {
+          onPaymentSuccess();
+        }
       } else {
         setError(data.message || "Payment failed. Please try again.");
       }
@@ -39,16 +40,16 @@ export default function Payment({ onPaymentSuccess }) {
     <div className="payment-page">
       <div className="payment-content">
         <h1>Complete Setup Fee</h1>
+
         <p className="subtitle">
-          Unlock your plan by confirming your payment. 
-          Stripe integration will be added later.
+          Unlock your plan by confirming your payment.
         </p>
 
         {error && <p className="payment-error">{error}</p>}
 
-        <button 
-          onClick={handlePay} 
-          className="btn btn-primary" 
+        <button
+          onClick={handlePay}
+          className="btn btn-primary"
           disabled={loading}
         >
           {loading ? "Processing..." : "Pay Now ($5.00)"}
@@ -74,19 +75,18 @@ export default function Payment({ onPaymentSuccess }) {
           background: #121212;
           border: 1px solid #333;
           border-radius: 12px;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
         }
 
-        h1 { 
-          font-size: 1.8rem; 
-          margin-bottom: 0.5rem; 
+        h1 {
+          font-size: 1.8rem;
+          margin-bottom: 0.5rem;
         }
 
-        .subtitle { 
-          color: #888; 
-          margin-bottom: 2rem; 
-          font-size: 0.9rem; 
-          line-height: 1.4;
+        .subtitle {
+          color: #888;
+          margin-bottom: 2rem;
+          font-size: 0.9rem;
         }
 
         .btn {
@@ -95,9 +95,7 @@ export default function Payment({ onPaymentSuccess }) {
           border: none;
           border-radius: 6px;
           font-weight: bold;
-          font-size: 1rem;
           cursor: pointer;
-          transition: transform 0.1s;
         }
 
         .btn-primary {
@@ -110,14 +108,10 @@ export default function Payment({ onPaymentSuccess }) {
           cursor: not-allowed;
         }
 
-        .btn-primary:active:not(:disabled) { 
-          transform: scale(0.98); 
-        }
-
-        .payment-error { 
-          color: #ff5555; 
-          font-size: 0.85rem; 
-          margin-bottom: 1rem; 
+        .payment-error {
+          color: #ff5555;
+          font-size: 0.85rem;
+          margin-bottom: 1rem;
         }
       `}</style>
     </div>

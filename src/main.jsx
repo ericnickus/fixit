@@ -9,11 +9,9 @@ import Payment from "./pages/Payment";
 import "./styles.css";
 
 function Root() {
-  const [status, setStatus] = useState({
-    loading: true,
-    authenticated: false,
-    hasPaid: false,
-  });
+  // Single source of truth state machine
+  const [status, setStatus] = useState("loading");
+  // loading | guest | authed | paid
 
   useEffect(() => {
     const checkUserStatus = async () => {
@@ -21,67 +19,92 @@ function Root() {
         const token = localStorage.getItem("token");
 
         if (!token) {
-          setStatus({ loading: false, authenticated: false, hasPaid: false });
+          setStatus("guest");
           return;
         }
 
         const res = await fetch("/api/auth/status", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
         if (!res.ok) {
-          setStatus({ loading: false, authenticated: false, hasPaid: false });
+          localStorage.removeItem("token");
+          setStatus("guest");
           return;
         }
 
         const data = await res.json();
 
-        setStatus({
-          loading: false,
-          authenticated: data.authenticated,
-          hasPaid: data.hasPaid,
-        });
+        if (!data.authenticated) {
+          localStorage.removeItem("token");
+          setStatus("guest");
+        } else if (!data.hasPaid) {
+          setStatus("authed");
+        } else {
+          setStatus("paid");
+        }
       } catch (err) {
-        console.error(err);
-        setStatus({ loading: false, authenticated: false, hasPaid: false });
+        console.error("Auth check failed:", err);
+        localStorage.removeItem("token");
+        setStatus("guest");
       }
     };
 
     checkUserStatus();
   }, []);
 
-  if (status.loading) {
-    return <div>Loading...</div>;
+  // Loading screen
+  if (status === "loading") {
+    return (
+      <div style={{ color: "#fff", textAlign: "center", marginTop: "20%" }}>
+        Loading...
+      </div>
+    );
   }
 
   return (
     <BrowserRouter>
       <Routes>
-        {/* Login */}
+
+        {/* Splash / Login */}
         <Route
           path="/login"
-          element={<Splash />}
+          element={
+            <Splash
+              onLoginSuccess={() => {
+                setStatus("authed");
+              }}
+            />
+          }
         />
 
-        {/* Payment protected */}
+        {/* Payment gate */}
         <Route
           path="/payment"
           element={
-            status.authenticated ? (
-              <Payment />
+            status === "authed" ? (
+              <Payment
+                onPaymentSuccess={() => {
+                  setStatus("paid");
+                }}
+              />
+            ) : status === "paid" ? (
+              <Navigate to="/app" />
             ) : (
               <Navigate to="/login" />
             )
           }
         />
 
-        {/* App protected */}
+        {/* Main App */}
         <Route
           path="/app"
           element={
-            status.authenticated && status.hasPaid ? (
+            status === "paid" ? (
               <App />
-            ) : status.authenticated ? (
+            ) : status === "authed" ? (
               <Navigate to="/payment" />
             ) : (
               <Navigate to="/login" />
@@ -89,11 +112,9 @@ function Root() {
           }
         />
 
-        {/* Default redirect */}
-        <Route
-          path="*"
-          element={<Navigate to="/login" />}
-        />
+        {/* Default route */}
+        <Route path="*" element={<Navigate to="/login" />} />
+
       </Routes>
     </BrowserRouter>
   );
