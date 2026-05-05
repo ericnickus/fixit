@@ -7,9 +7,10 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import path from "path";
 import { fileURLToPath } from "url";
-import pkg from "pg";
-const { Pool } = pkg;
-
+//import pkg from "pg";
+import pg from 'pg';
+const { Pool } = pg;
+//const { Pool } = pkg;
 import { createSelfMemoryStore } from "./modules/selfMemory.js";
 import { createStepMetricsStore } from "./modules/stepMetrics.js";
 import { getRuntimeConfigPath, loadRuntimeConfig, resolveActiveModeConfig } from "./modules/runtimeConfig.js";
@@ -18,13 +19,36 @@ import { createConformStatsStore } from "./modules/conformStats.js";
 import { createRequestHistoryLogger } from "./modules/requestHistoryLogger.js";
 import { processRepairPlanRequest } from "./ai-processing/repairPlanProcessor.js";
 
-dotenv.config();
-
-const app = express();
-
 // Set up __dirname equivalent for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+dotenv.config();
+
+
+console.log("=== ENV DEBUG ===");
+console.log({
+  DB_USER: process.env.DB_USER,
+  DB_PASSWORD: process.env.DB_PASSWORD ? "SET" : "MISSING",
+  DB_HOST: process.env.DB_HOST,
+  DB_NAME: process.env.DB_NAME,
+  JWT_SECRET: process.env.JWT_SECRET ? "SET" : "MISSING"
+});
+
+//dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+//dotenv.config({
+//	path: path.resolve("/var/www/fixit/.env")
+//});
+console.log("DB_USER:", process.env.DB_USER);
+const JWT_SECRET = process.env.JWT_SECRET || "a_very_long_random_string_here";
+
+
+
+
+const app = express();
+
+
+
 
 const port = Number(process.env.PORT || 8787);
 const model = process.env.OPENAI_MODEL || "gpt-4.1-mini";
@@ -53,11 +77,12 @@ const promptThrottle = createRequestThrottle({ cooldownSeconds: runModeSettings.
 
 // Database Connection Pool
 const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : "",
-  port: Number(process.env.DB_PORT || 5432),
+  user: process.env.DB_USER || "app_admin",
+  host: process.env.DB_HOST || "localhost",
+  database: process.env.DB_NAME || "my_guardian_app",
+//  password: process.env.DB_PASSWORD ? String(process.env.DB_PASSWORD) : "",
+	password: String(process.env.DB_PASSWORD || "G%31Y??@"), 
+ port: Number(process.env.DB_PORT || 5432),
 });
 
 const API_KEY_CANDIDATES = [
@@ -154,7 +179,9 @@ app.get("/api/auth/status", async (request, response) => {
   }
 });
 
-app.post("/api/auth/login", async (request, response) => {
+
+
+app.post("/api/auth/login", async (request, response) => { 
   const { email, password } = request.body;
 
   try {
@@ -180,6 +207,8 @@ app.post("/api/auth/login", async (request, response) => {
     return response.status(500).json({ message: "Internal Server Error" });
   }
 });
+
+
 
 app.post("/api/auth/signup", async (request, response) => {
   const { email, password } = request.body;

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
-export default function Splash({ onLoginSuccess }) {
+export default function Splash() {
+  const navigate = useNavigate();
+
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,88 +14,102 @@ export default function Splash({ onLoginSuccess }) {
     setError("");
 
     try {
-      // Replace this URL with your Hetzner Node API endpoint
-      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
+      const endpoint = isLogin
+        ? "/api/auth/login"
+        : "/api/auth/signup";
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        // 1. Save the token to localStorage so main.jsx can read it!
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-        }
-
-        // 2. This triggers the switch to Payment or App in main.jsx
-        onLoginSuccess();
-      } else {
-        setError(data.message || "Authentication failed. Please try again.");
+      if (!response.ok) {
+        setError(data.message || "Authentication failed.");
+        return;
       }
+
+      // Save token
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+
+      // 🔥 ROUTER-BASED NAVIGATION (replaces onLoginSuccess)
+      navigate("/payment");
+
     } catch (err) {
-      setError("Server error. Please check your connection.");
+      setError("Server error. Please try again.");
     }
   };
 
   return (
     <div className="splash-page">
       <div className="splash-content">
-        {/* CENTERED IMAGE / LOGO */}
+
+        {/* LOGO */}
         <div className="logo-container">
-          <img 
-            src="/logo.jpg" 
-            alt="App Logo" 
-            className="splash-logo" 
+          <img
+            src="/logo.jpg"
+            alt="App Logo"
+            className="splash-logo"
           />
         </div>
 
         <h1>{isLogin ? "Welcome Back" : "Create Account"}</h1>
-        <p className="subtitle">Secure access to professional repair plans.</p>
+        <p className="subtitle">
+          Secure access to professional repair plans.
+        </p>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <div className="input-group">
             <label>Email Address</label>
-            <input 
-              type="email" 
-              value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              required 
+              required
             />
           </div>
 
           <div className="input-group">
             <label>Password</label>
-            <input 
-              type="password" 
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required 
+              required
             />
           </div>
 
-          {error && <p className="auth-error">{error}</p>}
+          {error && (
+            <p className="auth-error">{error}</p>
+          )}
 
           <button type="submit" className="btn btn-primary">
             {isLogin ? "Log In" : "Sign Up"}
           </button>
         </form>
 
-        <button 
-          className="btn-link" 
+        <button
+          className="btn-link"
           onClick={() => setIsLogin(!isLogin)}
         >
-          {isLogin ? "Need an account? Sign up" : "Already have an account? Log in"}
+          {isLogin
+            ? "Need an account? Sign up"
+            : "Already have an account? Log in"}
         </button>
       </div>
 
       <style jsx>{`
         .splash-page {
-          background-color: #0a0a0a; /* Deep Black/Dark Grey */
+          background-color: #0a0a0a;
           min-height: 100vh;
           display: flex;
           align-items: center;
@@ -122,8 +139,16 @@ export default function Splash({ onLoginSuccess }) {
           filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
         }
 
-        h1 { font-size: 1.8rem; margin-bottom: 0.5rem; }
-        .subtitle { color: #888; margin-bottom: 2rem; font-size: 0.9rem; }
+        h1 {
+          font-size: 1.8rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+          color: #888;
+          margin-bottom: 2rem;
+          font-size: 0.9rem;
+        }
 
         .auth-form {
           display: flex;
@@ -164,9 +189,15 @@ export default function Splash({ onLoginSuccess }) {
           transition: transform 0.1s;
         }
 
-        .btn-primary:active { transform: scale(0.98); }
+        .btn-primary:active {
+          transform: scale(0.98);
+        }
 
-        .auth-error { color: #ff5555; font-size: 0.8rem; margin: 0; }
+        .auth-error {
+          color: #ff5555;
+          font-size: 0.8rem;
+          margin: 0;
+        }
 
         .btn-link {
           background: none;
@@ -181,3 +212,7 @@ export default function Splash({ onLoginSuccess }) {
     </div>
   );
 }
+
+
+
+
