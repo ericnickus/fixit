@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import "./Splash.css";
+import "../splash.css";
 
 export default function Splash({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -12,9 +12,7 @@ export default function Splash({ onLoginSuccess }) {
     setError("");
 
     try {
-      const endpoint = isLogin
-        ? "/api/auth/login"
-        : "/api/auth/signup";
+      const endpoint = isLogin ? "/api/auth/login" : "/api/auth/signup";
 
       const response = await fetch(endpoint, {
         method: "POST",
@@ -32,12 +30,12 @@ export default function Splash({ onLoginSuccess }) {
         return;
       }
 
-      // Save token
+      // Save token securely
       if (data.token) {
         localStorage.setItem("token", data.token);
       }
 
-      // 🔥 ONLY notify Root (no navigation)
+      // Notify main.jsx to advance the state machine
       if (onLoginSuccess) {
         onLoginSuccess();
       }
@@ -50,13 +48,8 @@ export default function Splash({ onLoginSuccess }) {
   return (
     <div className="splash-page">
       <div className="splash-content">
-
         <div className="logo-container">
-          <img
-            src="/logo.jpg"
-            alt="App Logo"
-            className="splash-logo"
-          />
+          <img src="/logo.jpg" alt="App Logo" className="splash-logo" />
         </div>
 
         <h1>{isLogin ? "Welcome Back" : "Create Account"}</h1>
@@ -100,11 +93,8 @@ export default function Splash({ onLoginSuccess }) {
             setError("");
           }}
         >
-          {isLogin
-            ? "Need an account? Sign up"
-            : "Already have an account? Log in"}
+          {isLogin ? "Need an account? Sign up" : "Already have an account? Log in"}
         </button>
-
       </div>
     </div>
   );

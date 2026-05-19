@@ -392,10 +392,14 @@ function App() {
       const controller = new AbortController();
       timeoutHandle = window.setTimeout(() => controller.abort(), PLAN_REQUEST_TIMEOUT_MS);
 
+      // 🔐 Grab the token securely
+      const token = localStorage.getItem("token");
+
       const response = await fetch("/api/repair-plan", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : "" 
         },
         signal: controller.signal,
         body: JSON.stringify(requestBody)
@@ -469,10 +473,12 @@ function App() {
     setEventLog((current) => [entry, ...current].slice(0, 120));
 
     try {
+      const token = localStorage.getItem("token");
       await fetch("/api/step-event", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": token ? `Bearer ${token}` : ""
         },
         body: JSON.stringify({
           ...entry,
